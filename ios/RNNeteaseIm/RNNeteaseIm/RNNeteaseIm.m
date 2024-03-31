@@ -20,7 +20,7 @@
 
 #define kDevice_Is_iPhoneX ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1125, 2436), [[UIScreen mainScreen] currentMode].size) : NO)
 
-@interface RNNeteaseIm(){
+@interface RNNeteaseIm()<NIMChatManagerDelegate,NIMChatroomManagerDelegate>{
     NSString *strUserAgent;
 }
 
@@ -676,6 +676,40 @@ RCT_EXPORT_METHOD(cleanCache){
     [self removAllRecentSessions];
 }
 
+//进入聊天室
+RCT_EXPORT_METHOD(enterChatRoom:(nonnull NSString *)roomID
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject){
+    //请将 NIMMyAccount 以及 NIMMyToken 替换成您自己提交到此App下的账号和密码
+    NIMChatroomEnterRequest * request = [NIMChatroomEnterRequest new];
+    request.roomId = roomID;
+    [NIMSDK.sharedSDK.chatroomManager enterChatroom:request completion:^(NSError * _Nullable error, NIMChatroom * _Nullable chatroom, NIMChatroomMember * _Nullable me) {
+        if (error) {
+            NSLog(@"进入网易YXIN聊天室 %@",error);
+        } else {
+            NSLog(@"进入网易YXIN聊天室成功：%@", roomID);
+        }
+        resolve(@{@"error":error?:@""});
+    }];
+}
+
+//退出聊天室
+RCT_EXPORT_METHOD(quitChatRoom:(nonnull NSString *)roomID
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject){
+    [NIMSDK.sharedSDK.chatroomManager exitChatroom:roomID completion:^(NSError * _Nullable error) {
+       if (error) {
+           NSLog(@"离开网易YXIN聊天室 %@",error);
+
+       } else {
+           NSLog(@"离开网易YXIN聊天室");
+       }
+        resolve(@{@"error":error?:@""});
+    }];
+    
+}
+
+
 //删除文件夹下所有文件
 - (void)deleteFilesWithPath:(NSString *)path andFiles:(NSArray *)files{
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
@@ -717,6 +751,10 @@ RCT_EXPORT_METHOD(cleanCache){
     [[NIMViewController initWithController] addDelegate];
     [[NoticeViewController initWithNoticeViewController]initWithDelegate];
     [RNNotificationCenter sharedCenter];
+    
+    // 设置网易YXIN聊天室代理
+    [[[NIMSDK sharedSDK] chatManager] addDelegate:self];
+    [[[NIMSDK sharedSDK] chatroomManager] addDelegate:self];
 }
 
 -(void)setSendState{
@@ -801,6 +839,15 @@ RCT_EXPORT_METHOD(cleanCache){
         }
         
     };
+}
+
+- (void)onRecvMessages:(NSArray<NIMMessage *> *)messages {
+
+    NSMutableArray *messageList = [NSMutableArray new];
+    [messages enumerateObjectsUsingBlock:^(NIMMessage * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [messageList addObject:@{@"sessionId":obj.session.sessionId,@"text":obj.text}];
+    }];
+    [_bridge.eventDispatcher sendDeviceEventWithName:@"observeOnRecvMessages" body:@{@"messageList":messageList}];
 }
 
 //获取网络状态权限

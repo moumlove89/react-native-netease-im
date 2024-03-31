@@ -1,8 +1,8 @@
 /**
  * Created by dowin on 2017/8/2.
  */
-import {NativeModules, Platform} from 'react-native';
-const {RNNeteaseIm} = NativeModules;
+import { NativeModules, Platform } from 'react-native';
+const { RNNeteaseIm } = NativeModules;
 class Session {
   /**
    * 登陆
@@ -12,6 +12,23 @@ class Session {
    */
   login(contactId, token) {
     return RNNeteaseIm.login(contactId, token);
+  }
+
+  /**
+   * 进入聊天室
+   * @param roomID
+   * @returns {*} @see
+   */
+  enterChatRoom(roomID) {
+    return RNNeteaseIm.enterChatRoom(roomID);
+  }
+  /**
+   * 退出聊天室
+   * @param roomID
+   * @returns {*} @see
+   */
+  quitChatRoom(roomID) {
+    return RNNeteaseIm.quitChatRoom(roomID);
   }
   /**
    * 退出
